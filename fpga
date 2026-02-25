@@ -1,0 +1,10 @@
+c140-15 [801] ~ # assign-fpga-board
+The FPGA board with serial 25000220 is now assigned to you.
+Please check the labels to ensure you're working with the right board!
+UART serial port: /dev/ttyU-BOARD3
+Vivado hw_server port: 3134
+Start Vivado hw_server with: hw_server -stcp:localhost:3134
+
+Keep both assign-fpga-board and hw_server open while using the FPGA board!
+Press Ctrl-C to exit.
+

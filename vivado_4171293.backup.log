@@ -1,0 +1,26 @@
+#-----------------------------------------------------------
+# Vivado v2025.2 (64-bit)
+# SW Build 6299465 on Fri Nov 14 12:34:56 MST 2025
+# IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+# SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+# Start of session at: Wed Feb 18 20:22:41 2026
+# Process ID         : 4171293
+# Current directory  : /scratch/cs199-akc/GBA_MiSTer
+# Command line       : vivado -mode batch -source ./scripts/create_project.tcl
+# Log file           : /scratch/cs199-akc/GBA_MiSTer/vivado.log
+# Journal file       : /scratch/cs199-akc/GBA_MiSTer/vivado.jou
+# Running On         : eda-1.EECS.Berkeley.EDU
+# Platform           : RedHatEnterprise
+# Operating System   : Red Hat Enterprise Linux release 8.10 (Ootpa)
+# Processor Detail   : AMD EPYC 9454 48-Core Processor
+# CPU Frequency      : 1500.000 MHz
+# CPU Physical cores : 48
+# CPU Logical cores  : 96
+# Host memory        : 810775 MB
+# Swap memory        : 34359 MB
+# Total Virtual      : 845135 MB
+# Available Virtual  : 766625 MB
+#-----------------------------------------------------------
+source ./scripts/create_project.tcl
+couldn't read file "./scripts/create_project.tcl": no such file or directory
+INFO: [Common 17-206] Exiting Vivado at Wed Feb 18 20:22:47 2026...
