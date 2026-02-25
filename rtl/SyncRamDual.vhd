@@ -26,35 +26,45 @@ entity SyncRamDual is
 end;
 
 architecture rtl of SyncRamDual is
-
+   -- Xilinx UG901 true dual-port block RAM, read-first, symmetric, single clock.
    subtype word_t is std_logic_vector((DATA_WIDTH-1) downto 0);
    type memory_t is array(0 to 2**ADDR_WIDTH-1) of word_t;
 
    signal ram : memory_t := (others => (others => '0'));
-
-   -- Vivado infers block RAM only with one write per process. Use one write per cycle (port A priority).
    attribute ram_style : string;
    attribute ram_style of ram : signal is "block";
 
-begin
+   signal read_a : word_t := (others => '0');
+   signal read_b : word_t := (others => '0');
 
+begin
+   -- Port A: read-first (read then optional write); both ports can write same cycle when addr_a /= addr_b
    process(clk)
    begin
       if rising_edge(clk) then
-         -- Read (before write): output sees previous cycle data
          if re_a = '1' then
-            dataout_a <= ram(addr_a);
+            read_a <= ram(addr_a);
          end if;
-         if re_b = '1' then
-            dataout_b <= ram(addr_b);
-         end if;
-         -- Single write per cycle so Vivado infers block RAM (port A has priority if both write)
          if we_a = '1' then
             ram(addr_a) <= datain_a;
-         elsif we_b = '1' then
+         end if;
+      end if;
+   end process;
+
+   -- Port B
+   process(clk)
+   begin
+      if rising_edge(clk) then
+         if re_b = '1' then
+            read_b <= ram(addr_b);
+         end if;
+         if we_b = '1' then
             ram(addr_b) <= datain_b;
          end if;
       end if;
    end process;
+
+   dataout_a <= read_a;
+   dataout_b <= read_b;
 
 end rtl;

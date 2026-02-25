@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use IEEE.numeric_std.all;
+use ieee.numeric_std.all;
 
 entity SyncRamDualByteEnable is
    generic 
@@ -36,82 +36,117 @@ entity SyncRamDualByteEnable is
 end;
 
 architecture rtl of SyncRamDualByteEnable is
-	-- Flat 1D array so Vivado infers block RAM (avoids "RAM from Record/Structs")
-	subtype word_t is std_logic_vector(BYTES*BYTE_WIDTH - 1 downto 0);
-	type ram_t is array (0 to 2 ** ADDR_WIDTH - 1) of word_t;
+   -- Xilinx UG901: True dual-port BRAM with byte-wide write enable, NO_CHANGE mode.
+   -- Shared variable so both ports can read/write; two processes for BRAM inference.
+   constant SIZE : integer := 2**ADDR_WIDTH;
+   subtype word_t is std_logic_vector(BYTES*BYTE_WIDTH - 1 downto 0);
+   type ram_type is array (0 to SIZE - 1) of word_t;
 
-	signal ram : ram_t := (others => (others => '0'));
-	attribute ram_style : string;
-	attribute ram_style of ram : signal is "block";
+   shared variable RAM : ram_type := (others => (others => '0'));
 
-	signal q1_local : word_t;
-	signal q2_local : word_t;
+   signal reg_a, reg_b : word_t := (others => '0');
+
+   -- Concatenate byte inputs to word (match port order: 0=LSB)
+   function to_dia return word_t is
+      variable w : word_t;
+   begin
+      w(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_a0;
+      w(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_a1;
+      w(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_a2;
+      w(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_a3;
+      return w;
+   end;
+   function to_dib return word_t is
+      variable w : word_t;
+   begin
+      w(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_b0;
+      w(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_b1;
+      w(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_b2;
+      w(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_b3;
+      return w;
+   end;
+
+   -- Byte enable = we and be (per byte)
+   signal wea_vec : std_logic_vector(BYTES - 1 downto 0);
+   signal web_vec : std_logic_vector(BYTES - 1 downto 0);
+   signal dia     : word_t;
+   signal dib     : word_t;
+
 begin
+   wea_vec <= (others => we_a) and be_a;
+   web_vec <= (others => we_b) and be_b;
+   dia      <= to_dia;
+   dib      <= to_dib;
 
-   -- Synthesis: single process, one write per cycle (port A priority), so Vivado infers block RAM
    gsynth : if is_simu = '0' generate
    begin
-      unpack: for i in 0 to BYTES - 1 generate
-         dataout_a(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i) <= q1_local(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i);
-         dataout_b(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i) <= q2_local(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i);
-      end generate unpack;
-
+      ------- Port A (NO_CHANGE: output only updated when not writing) -------
       process(clk)
-         variable va, vb : word_t;
       begin
          if rising_edge(clk) then
-            va := ram(addr_a);
-            vb := ram(addr_b);
-            q1_local <= va;
-            q2_local <= vb;
-            -- One write per cycle (port A has priority when both write)
-            if we_a = '1' then
-               if be_a(0) = '1' then va(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_a0; end if;
-               if be_a(1) = '1' then va(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_a1; end if;
-               if be_a(2) = '1' then va(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_a2; end if;
-               if be_a(3) = '1' then va(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_a3; end if;
-               ram(addr_a) <= va;
-            elsif we_b = '1' then
-               if be_b(0) = '1' then vb(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_b0; end if;
-               if be_b(1) = '1' then vb(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_b1; end if;
-               if be_b(2) = '1' then vb(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_b2; end if;
-               if be_b(3) = '1' then vb(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_b3; end if;
-               ram(addr_b) <= vb;
+            if (wea_vec = (wea_vec'range => '0')) then
+               reg_a <= RAM(addr_a);
             end if;
+            for i in 0 to BYTES - 1 loop
+               if wea_vec(i) = '1' then
+                  RAM(addr_a)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dia((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
+               end if;
+            end loop;
          end if;
       end process;
+
+      ------- Port B -------
+      process(clk)
+      begin
+         if rising_edge(clk) then
+            if (web_vec = (web_vec'range => '0')) then
+               reg_b <= RAM(addr_b);
+            end if;
+            for i in 0 to BYTES - 1 loop
+               if web_vec(i) = '1' then
+                  RAM(addr_b)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dib((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
+               end if;
+            end loop;
+         end if;
+      end process;
+
+      dataout_a <= reg_a;
+      dataout_b <= reg_b;
    end generate;
 
+   -- Simulation: same RTL so behavior matches synthesis
    gsimu : if is_simu = '1' generate
    begin
-      unpack: for i in 0 to BYTES - 1 generate
-         dataout_a(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i) <= q1_local(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i);
-         dataout_b(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i) <= q2_local(BYTE_WIDTH*(i+1) - 1 downto BYTE_WIDTH*i);
-      end generate unpack;
-
       process(clk)
-         variable va, vb : word_t;
       begin
          if rising_edge(clk) then
-            va := ram(addr_a);
-            vb := ram(addr_b);
-            q1_local <= va;
-            q2_local <= vb;
-            if we_a = '1' then
-               if be_a(0) = '1' then va(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_a0; end if;
-               if be_a(1) = '1' then va(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_a1; end if;
-               if be_a(2) = '1' then va(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_a2; end if;
-               if be_a(3) = '1' then va(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_a3; end if;
-               ram(addr_a) <= va;
-            elsif we_b = '1' then
-               if be_b(0) = '1' then vb(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_b0; end if;
-               if be_b(1) = '1' then vb(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_b1; end if;
-               if be_b(2) = '1' then vb(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_b2; end if;
-               if be_b(3) = '1' then vb(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_b3; end if;
-               ram(addr_b) <= vb;
+            if (wea_vec = (wea_vec'range => '0')) then
+               reg_a <= RAM(addr_a);
             end if;
+            for i in 0 to BYTES - 1 loop
+               if wea_vec(i) = '1' then
+                  RAM(addr_a)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dia((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
+               end if;
+            end loop;
          end if;
       end process;
+
+      process(clk)
+      begin
+         if rising_edge(clk) then
+            if (web_vec = (web_vec'range => '0')) then
+               reg_b <= RAM(addr_b);
+            end if;
+            for i in 0 to BYTES - 1 loop
+               if web_vec(i) = '1' then
+                  RAM(addr_b)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dib((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
+               end if;
+            end loop;
+         end if;
+      end process;
+
+      dataout_a <= reg_a;
+      dataout_b <= reg_b;
    end generate;
-  
+
 end rtl;
