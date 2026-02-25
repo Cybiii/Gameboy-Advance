@@ -1,0 +1,63 @@
+-------------------------------------
+| Tool Version : Vivado v.2025.2
+| Date         : Tue Feb 24 22:58:10 2026
+| Host         : eda-1.EECS.Berkeley.EDU
+| Design       : design_1
+| Device       : xczu3eg-sfvc784-2-E-
+-------------------------------------
+
+For more information on clockInfo.txt clock routing debug file see https://support.xilinx.com/s/article/000035660?language=en_US
+
+***********************
+Running Pre-CRP Checker
+***********************
+Number of global clocks: 5
+	Number of BUFGCE: 5
+	Number of BUFGCE_HDIO: 0
+	Number of BUFG_CTRL: 0
+	Number of BUFGCE_DIV: 0
+	Number of BUFG_GT: 0
+	Number of BUFG_PS: 0
+	Number of BUFG_FABRIC: 0
+	Running suboptimal placement checker for 4 clocks (and their loads) which do not have the CLOCK_LOW_FANOUT property but have a fanout less than 2000...
+Pre-CRP Checker took 0 secs
+
+**************************************
+Clock Nets/Source Overview (CRP Input)
+**************************************
+Clock 1: emu_inst/pll/outclk_0
+	Clock source type: BUFGCE
+	Clock source region: X1Y2
+	Clock regions with locked loads: X1Y1 
+	initial rect ((0, 0), (1, 2))
+
+Clock 2: emu_inst/pll/outclk_1
+	Clock source type: BUFGCE
+	Clock source region: X1Y2
+	initial rect ((0, 0), (1, 2))
+
+Clock 3: clk_50
+	Clock source type: BUFGCE
+	Clock source region: X1Y2
+	Clock regions with locked loads: X1Y2 
+	initial rect ((1, 2), (1, 2))
+
+Clock 4: clk_100_BUFG
+	Clock source type: BUFGCE
+	Clock source region: X1Y2
+	initial rect ((1, 1), (1, 2))
+
+Clock 5: emu_inst/pll/clkfbin
+	Clock source type: BUFGCE
+	Clock source region: X1Y2
+	Clock regions with locked loads: X1Y2 
+	initial rect ((1, 2), (1, 2))
+
+
+
+*****************************
+Clocks With User Constraints:
+*****************************
+No clocks with user constraints found
+
+

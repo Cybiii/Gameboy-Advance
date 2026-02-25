@@ -60,5 +60,7 @@ set_property IOSTANDARD LVCMOS12 [get_ports SWITCHES*]
 # SDRAM - AUP-ZU3 has no PL SDRAM; these are driven by the core but unused.
 # Leave unconstrained (Vivado will warn) or assign to dummy/PMOD if desired.
 #----------------------------------------------------------------------------
+set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
+set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
 # set_property IOSTANDARD LVCMOS33 [get_ports SDRAM_*]
 # (add pin locations only if you attach external SDRAM)

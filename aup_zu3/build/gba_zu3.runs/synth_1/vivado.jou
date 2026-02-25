@@ -3,8 +3,8 @@
 # SW Build 6299465 on Fri Nov 14 12:34:56 MST 2025
 # IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
 # SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
-# Start of session at: Tue Feb 24 22:20:44 2026
-# Process ID         : 3716581
+# Start of session at: Tue Feb 24 22:51:26 2026
+# Process ID         : 4085102
 # Current directory  : /scratch/cs199-akc/GBA_MiSTer/aup_zu3/build/gba_zu3.runs/synth_1
 # Command line       : vivado -log zu3_top.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source zu3_top.tcl
 # Log file           : /scratch/cs199-akc/GBA_MiSTer/aup_zu3/build/gba_zu3.runs/synth_1/zu3_top.vds
@@ -13,12 +13,12 @@
 # Platform           : RedHatEnterprise
 # Operating System   : Red Hat Enterprise Linux release 8.10 (Ootpa)
 # Processor Detail   : AMD EPYC 9454 48-Core Processor
-# CPU Frequency      : 1490.399 MHz
+# CPU Frequency      : 1500.000 MHz
 # CPU Physical cores : 48
 # CPU Logical cores  : 96
 # Host memory        : 810775 MB
 # Swap memory        : 34359 MB
 # Total Virtual      : 845135 MB
-# Available Virtual  : 661135 MB
+# Available Virtual  : 660584 MB
 #-----------------------------------------------------------
 source zu3_top.tcl -notrace

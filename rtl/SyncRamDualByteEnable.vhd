@@ -42,41 +42,17 @@ architecture rtl of SyncRamDualByteEnable is
    subtype word_t is std_logic_vector(BYTES*BYTE_WIDTH - 1 downto 0);
    type ram_type is array (0 to SIZE - 1) of word_t;
 
-   shared variable RAM : ram_type := (others => (others => '0'));
+   shared variable RAM : ram_type := (0 to SIZE - 1 => (others => '0'));
 
    signal reg_a, reg_b : word_t := (others => '0');
-
-   -- Concatenate byte inputs to word (match port order: 0=LSB)
-   function to_dia return word_t is
-      variable w : word_t;
-   begin
-      w(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_a0;
-      w(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_a1;
-      w(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_a2;
-      w(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_a3;
-      return w;
-   end;
-   function to_dib return word_t is
-      variable w : word_t;
-   begin
-      w(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_b0;
-      w(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_b1;
-      w(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_b2;
-      w(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_b3;
-      return w;
-   end;
 
    -- Byte enable = we and be (per byte)
    signal wea_vec : std_logic_vector(BYTES - 1 downto 0);
    signal web_vec : std_logic_vector(BYTES - 1 downto 0);
-   signal dia     : word_t;
-   signal dib     : word_t;
 
 begin
-   wea_vec <= (others => we_a) and be_a;
-   web_vec <= (others => we_b) and be_b;
-   dia      <= to_dia;
-   dib      <= to_dib;
+   wea_vec <= (BYTES - 1 downto 0 => we_a) and be_a;
+   web_vec <= (BYTES - 1 downto 0 => we_b) and be_b;
 
    gsynth : if is_simu = '0' generate
    begin
@@ -84,14 +60,23 @@ begin
       process(clk)
       begin
          if rising_edge(clk) then
-            if (wea_vec = (wea_vec'range => '0')) then
+            if (wea_vec = (BYTES - 1 downto 0 => '0')) then
                reg_a <= RAM(addr_a);
             end if;
-            for i in 0 to BYTES - 1 loop
-               if wea_vec(i) = '1' then
-                  RAM(addr_a)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dia((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
-               end if;
-            end loop;
+
+            -- Byte-wide write enable on Port A (assumes BYTES = 4)
+            if wea_vec(0) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_a0;
+            end if;
+            if wea_vec(1) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_a1;
+            end if;
+            if wea_vec(2) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_a2;
+            end if;
+            if wea_vec(3) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_a3;
+            end if;
          end if;
       end process;
 
@@ -99,14 +84,23 @@ begin
       process(clk)
       begin
          if rising_edge(clk) then
-            if (web_vec = (web_vec'range => '0')) then
+            if (web_vec = (BYTES - 1 downto 0 => '0')) then
                reg_b <= RAM(addr_b);
             end if;
-            for i in 0 to BYTES - 1 loop
-               if web_vec(i) = '1' then
-                  RAM(addr_b)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dib((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
-               end if;
-            end loop;
+
+            -- Byte-wide write enable on Port B (assumes BYTES = 4)
+            if web_vec(0) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_b0;
+            end if;
+            if web_vec(1) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_b1;
+            end if;
+            if web_vec(2) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_b2;
+            end if;
+            if web_vec(3) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_b3;
+            end if;
          end if;
       end process;
 
@@ -120,28 +114,44 @@ begin
       process(clk)
       begin
          if rising_edge(clk) then
-            if (wea_vec = (wea_vec'range => '0')) then
+            if (wea_vec = (BYTES - 1 downto 0 => '0')) then
                reg_a <= RAM(addr_a);
             end if;
-            for i in 0 to BYTES - 1 loop
-               if wea_vec(i) = '1' then
-                  RAM(addr_a)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dia((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
-               end if;
-            end loop;
+
+            if wea_vec(0) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_a0;
+            end if;
+            if wea_vec(1) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_a1;
+            end if;
+            if wea_vec(2) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_a2;
+            end if;
+            if wea_vec(3) = '1' then
+               RAM(addr_a)(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_a3;
+            end if;
          end if;
       end process;
 
       process(clk)
       begin
          if rising_edge(clk) then
-            if (web_vec = (web_vec'range => '0')) then
+            if (web_vec = (BYTES - 1 downto 0 => '0')) then
                reg_b <= RAM(addr_b);
             end if;
-            for i in 0 to BYTES - 1 loop
-               if web_vec(i) = '1' then
-                  RAM(addr_b)((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH) := dib((i + 1) * BYTE_WIDTH - 1 downto i * BYTE_WIDTH);
-               end if;
-            end loop;
+
+            if web_vec(0) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*1 - 1 downto BYTE_WIDTH*0) := datain_b0;
+            end if;
+            if web_vec(1) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*2 - 1 downto BYTE_WIDTH*1) := datain_b1;
+            end if;
+            if web_vec(2) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*3 - 1 downto BYTE_WIDTH*2) := datain_b2;
+            end if;
+            if web_vec(3) = '1' then
+               RAM(addr_b)(BYTE_WIDTH*4 - 1 downto BYTE_WIDTH*3) := datain_b3;
+            end if;
          end if;
       end process;
 
